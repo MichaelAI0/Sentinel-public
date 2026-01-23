@@ -1,0 +1,426 @@
+services:
+  # Ollama - Local LLM Inference (use when host Ollama unavailable)
+  # Start with: docker compose --profile ollama up -d
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:0.14.2
+    container_name: sentinel-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    # GPU support - uncomment if NVIDIA GPU available
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    networks:
+      - sentinel-network
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ==========================================================================
+  # llama-server - Local LLM Inference via llama.cpp
+  # ==========================================================================
+  # High-performance inference server with OpenAI-compatible API.
+  # Supports GGUF models like GLM-4.7-Flash for agent/coding tasks.
+  #
+  # Start with: docker compose --profile llama up -d
+  # GPU mode:   docker compose --profile llama-gpu up -d
+  #
+  # Download model first:
+  #   mkdir -p models
+  #   huggingface-cli download unsloth/GLM-4.7-Flash-GGUF \
+  #     --local-dir ./models --include "*Q4_K_XL*"
+  #
+  # See: https://unsloth.ai/docs/models/glm-4.7-flash
+  # ==========================================================================
+  llama-server:
+    profiles: ["llama"]
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: sentinel-llama-server
+    ports:
+      - "${LLAMA_PORT:-8081}:8080"
+    volumes:
+      - ./models:/models:ro
+      - llama_cache:/root/.cache/llama.cpp
+    environment:
+      # Model configuration (Q4_K_XL ~18GB RAM)
+      LLAMA_ARG_MODEL: /models/${LLAMA_MODEL_FILE:-GLM-4.7-Flash-UD-Q4_K_XL.gguf}
+      LLAMA_ARG_CTX_SIZE: ${LLAMA_CTX_SIZE:-32768}
+      LLAMA_ARG_N_PARALLEL: ${LLAMA_PARALLEL:-2}
+      # Inference parameters for tool-calling (Z.ai recommended)
+      LLAMA_ARG_TEMP: 0.7
+      LLAMA_ARG_TOP_P: 1.0
+      LLAMA_ARG_MIN_P: 0.01
+      LLAMA_ARG_JINJA: "true"
+      # Server settings
+      LLAMA_ARG_HOST: "0.0.0.0"
+      LLAMA_ARG_PORT: 8080
+      LLAMA_ARG_ALIAS: "glm-4.7-flash"
+    networks:
+      - sentinel-network
+    deploy:
+      resources:
+        limits:
+          cpus: "${LLAMA_CPU_LIMIT:-8.0}"
+          memory: "${LLAMA_MEMORY_LIMIT:-20G}"
+        reservations:
+          cpus: "2.0"
+          memory: "16G"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
+  # GPU-accelerated llama-server (requires NVIDIA GPU)
+  llama-server-gpu:
+    profiles: ["llama-gpu"]
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: sentinel-llama-server-gpu
+    ports:
+      - "${LLAMA_PORT:-8081}:8080"
+    volumes:
+      - ./models:/models:ro
+      - llama_cache:/root/.cache/llama.cpp
+    environment:
+      LLAMA_ARG_MODEL: /models/${LLAMA_MODEL_FILE:-GLM-4.7-Flash-UD-Q4_K_XL.gguf}
+      LLAMA_ARG_CTX_SIZE: ${LLAMA_CTX_SIZE:-65536}
+      LLAMA_ARG_N_PARALLEL: ${LLAMA_PARALLEL:-4}
+      LLAMA_ARG_N_GPU_LAYERS: 99
+      LLAMA_ARG_TEMP: 0.7
+      LLAMA_ARG_TOP_P: 1.0
+      LLAMA_ARG_MIN_P: 0.01
+      LLAMA_ARG_JINJA: "true"
+      LLAMA_ARG_FLASH_ATTN: "on"
+      LLAMA_ARG_HOST: "0.0.0.0"
+      LLAMA_ARG_PORT: 8080
+      LLAMA_ARG_ALIAS: "glm-4.7-flash"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - sentinel-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # MCP Tool Server
+  mcp-server:
+    build:
+      context: .
+      dockerfile: packages/mcp-server/Dockerfile
+    container_name: sentinel-mcp-server
+    ports:
+      - "3000:3000"
+    # Add docker group access for communicating with Ghidra container
+    group_add:
+      - ${DOCKER_GID:-999}
+    volumes:
+      - ./binaries:/binaries:ro
+      - ./outputs:/outputs
+      - ./logs:/logs
+      - cache_data:/cache
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MCP_MODE=http
+      - PORT=3000
+      - GHIDRA_CONTAINER=sentinel-ghidra
+      - CACHE_MAX_SIZE=${CACHE_MAX_SIZE:-100}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-86400}
+    depends_on:
+      ghidra:
+        condition: service_started
+    networks:
+      - sentinel-network
+    # Production hardening: resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "${MCP_CPU_LIMIT:-2.0}"
+          memory: "${MCP_MEMORY_LIMIT:-2G}"
+        reservations:
+          cpus: "0.5"
+          memory: "256M"
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256M,mode=1777
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Ghidra Headless Analyzer with Ghidra.js (JavaScript support)
+  ghidra:
+    build:
+      context: ./docker/ghidra
+      dockerfile: Dockerfile
+    container_name: sentinel-ghidra
+    volumes:
+      - ./binaries:/workspace/binaries:ro
+      - ghidra_projects:/workspace/projects
+      - ghidra_output:/workspace/output
+    environment:
+      - GHIDRA_HEADLESS=true
+      - _JAVA_OPTIONS=-Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    networks:
+      - sentinel-network
+    # Production hardening: resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "${GHIDRA_CPU_LIMIT:-4.0}"
+          memory: "${GHIDRA_MEMORY_LIMIT:-6G}"
+        reservations:
+          cpus: "1.0"
+          memory: "2G"
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # No network access needed for analysis
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Unipacker - Emulation-based PE Unpacker
+  # ==========================================================================
+  # Automatic unpacker using Unicorn Engine emulation.
+  # Supports: ASPack, FSG, MEW, MPRESS, Petite, UPX, YZPack, and unknown packers.
+  # Used as fallback when static unpacking fails.
+  # ==========================================================================
+  unipacker:
+    build:
+      context: ./docker/unipacker
+      dockerfile: Dockerfile
+    container_name: sentinel-unipacker
+    volumes:
+      - ./binaries:/workspace/binaries:ro
+      - unipacker_output:/workspace/output
+    networks:
+      - sentinel-network
+    deploy:
+      resources:
+        limits:
+          cpus: "${UNIPACKER_CPU_LIMIT:-2.0}"
+          memory: "${UNIPACKER_MEMORY_LIMIT:-2G}"
+        reservations:
+          cpus: "0.5"
+          memory: "512M"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Agent Orchestrator
+  # ==========================================================================
+  # Multi-agent malware analysis with LangGraph.js and Ollama.
+  # This service coordinates the full analysis workflow.
+  #
+  # Options:
+  #   1. Use --profile orchestrator for containerized mode (with Ollama in Docker)
+  #   2. Run locally for development (with host Ollama at localhost:11434)
+  #
+  # Start with: docker compose --profile orchestrator up -d
+  # ==========================================================================
+  orchestrator:
+    profiles: ["orchestrator"]
+    build:
+      context: .
+      dockerfile: packages/orchestrator/Dockerfile
+    container_name: sentinel-orchestrator
+    ports:
+      - "${ORCHESTRATOR_PORT:-8080}:8080"
+    volumes:
+      - ./binaries:/binaries:ro
+      - ./outputs:/outputs
+      - ./logs:/logs
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PORT=8080
+      - HOST=0.0.0.0
+      - OUTPUT_DIR=/outputs
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b-instruct}
+      - MCP_SERVER_URL=http://mcp-server:3000
+    depends_on:
+      ollama:
+        condition: service_healthy
+      mcp-server:
+        condition: service_healthy
+    networks:
+      - sentinel-network
+    # Production hardening: resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "${ORCHESTRATOR_CPU_LIMIT:-2.0}"
+          memory: "${ORCHESTRATOR_MEMORY_LIMIT:-1G}"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128M,mode=1777
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Orchestrator (Local Ollama Mode)
+  # ==========================================================================
+  # Use this when running Ollama on the host machine (localhost:11434).
+  # This avoids running Ollama in Docker (which is slower without GPU passthrough).
+  #
+  # Start with: docker compose --profile orchestrator-local up -d
+  # ==========================================================================
+  orchestrator-local:
+    profiles: ["orchestrator-local"]
+    build:
+      context: .
+      dockerfile: packages/orchestrator/Dockerfile
+    container_name: sentinel-orchestrator-local
+    ports:
+      - "${ORCHESTRATOR_PORT:-8080}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./binaries:/binaries:ro
+      - ./outputs:/outputs
+      - ./logs:/logs
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - PORT=8080
+      - HOST=0.0.0.0
+      - OUTPUT_DIR=/outputs
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b-instruct}
+      - MCP_SERVER_URL=http://mcp-server:3000
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    networks:
+      - sentinel-network
+    # Production hardening: resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "${ORCHESTRATOR_CPU_LIMIT:-2.0}"
+          memory: "${ORCHESTRATOR_MEMORY_LIMIT:-1G}"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128M,mode=1777
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Web UI
+  # ==========================================================================
+  # TanStack Start React frontend for the analysis platform.
+  # Provides upload, analysis management, and result visualization.
+  #
+  # Start with: docker compose --profile web up -d
+  # Or for development: cd packages/web && bun run dev
+  # ==========================================================================
+  web:
+    profiles: ["web"]
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    container_name: sentinel-web
+    ports:
+      - "${WEB_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+    networks:
+      - sentinel-network
+    deploy:
+      resources:
+        limits:
+          cpus: "${WEB_CPU_LIMIT:-1.0}"
+          memory: "${WEB_MEMORY_LIMIT:-512M}"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  ghidra_projects:
+  ghidra_output:
+  cache_data:
+  unipacker_output:
+  llama_cache:
+
+networks:
+  sentinel-network:
+    driver: bridge

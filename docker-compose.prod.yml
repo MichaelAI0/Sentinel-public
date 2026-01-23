@@ -1,0 +1,107 @@
+# =============================================================================
+# SENTINEL Docker Compose - Production Override
+# =============================================================================
+# Use with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This file provides production-specific overrides:
+#   - Stricter resource limits
+#   - Enhanced logging
+#   - Prometheus metrics endpoint (optional)
+#   - Centralized log collection
+# =============================================================================
+
+services:
+  mcp-server:
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=warn
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service,environment"
+    labels:
+      - "service=mcp-server"
+      - "environment=production"
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: "4G"
+        reservations:
+          cpus: "1.0"
+          memory: "512M"
+
+  ghidra:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+        labels: "service,environment"
+    labels:
+      - "service=ghidra"
+      - "environment=production"
+    deploy:
+      resources:
+        limits:
+          cpus: "8.0"
+          memory: "12G"
+        reservations:
+          cpus: "2.0"
+          memory: "4G"
+
+  orchestrator:
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=warn
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service,environment"
+    labels:
+      - "service=orchestrator"
+      - "environment=production"
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: "2G"
+        reservations:
+          cpus: "0.5"
+          memory: "256M"
+
+  orchestrator-local:
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=warn
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service,environment"
+    labels:
+      - "service=orchestrator-local"
+      - "environment=production"
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: "2G"
+        reservations:
+          cpus: "0.5"
+          memory: "256M"
+
+  ollama:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    labels:
+      - "service=ollama"
+      - "environment=production"

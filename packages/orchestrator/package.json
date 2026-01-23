@@ -1,0 +1,42 @@
+{
+  "name": "@sentinel/orchestrator",
+  "version": "0.1.0",
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "SENTINEL Agent Orchestrator - Multi-agent malware analysis with LangGraph.js and Ollama",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
+  },
+  "bin": {
+    "sentinel": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "cli": "bun run src/cli.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun && bun build src/cli.ts --outdir dist --target bun",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --apply src/"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.0",
+    "@langchain/langgraph": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@logtape/logtape": "^2.0.0",
+    "@sentinel/shared": "workspace:*",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

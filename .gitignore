@@ -1,0 +1,126 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.bun/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+*.js.map
+*.d.ts.map
+
+# Bun
+bun.lockb
+
+# Environment (keep .env.example as template, ignore actual .env)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+npm-debug.log*
+
+# Runtime
+*.pid
+*.seed
+*.pid.lock
+
+# Analysis files (may contain sensitive/malware data)
+binaries/*
+!binaries/.gitkeep
+!binaries/src/
+outputs/*
+!outputs/.gitkeep
+
+# Implementation tracking (session-specific)
+IMPLEMENTATION.md
+
+# Cache
+cache/
+.cache/
+**/.cache/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker
+.docker/
+
+# Ghidra (large project files)
+ghidra_projects/
+*.gpr
+*.rep
+docker/ghidra/extension/build/
+docker/ghidra/extension/.gradle/
+docker/ghidra/extension/lib/*.jar
+docker/ghidra/scripts/dist/
+
+# Test coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Large/binary files that shouldn't be in git
+*.zip
+*.tar.gz
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+
+# LLM Models (large GGUF files - 10GB+)
+models/
+*.gguf
+*.ggml
+*.safetensors
+*.pt
+*.pth
+*.onnx
+
+# Conda/Python environments
+.conda/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Cloudflare/Wrangler
+.wrangler/
+.dev.vars
+
+# Hugging Face cache
+.huggingface/
+
+# License keys and private keys
+*.pem
+*.key
+.sentinel/
+license.key
+
+# Premium package (loaded separately)
+packages/orchestrator/src/premium-loader.local.ts

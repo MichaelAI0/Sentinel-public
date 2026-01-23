@@ -1,0 +1,92 @@
+// SENTINEL Ghidra JavaScript Extension
+// Enables JavaScript/TypeScript scripting in Ghidra 12.x via GraalJS
+
+plugins {
+    id 'java'
+}
+
+// Ghidra installation directory - set via environment variable
+def ghidraInstallDir = System.getenv('GHIDRA_INSTALL_DIR') ?: '/opt/ghidra'
+
+// Extension metadata
+version = '1.0.0'
+group = 'sentinel.ghidra'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Ghidra API (compile only - provided at runtime)
+    compileOnly fileTree(dir: "${ghidraInstallDir}/Ghidra", include: ['**/*.jar'])
+    
+    // GraalJS engine - included in extension
+    implementation 'org.graalvm.polyglot:polyglot:24.1.1'
+    implementation 'org.graalvm.polyglot:js:24.1.1'
+    
+    // Needed for JavaScript features
+    implementation 'org.graalvm.js:js-scriptengine:24.1.1'
+}
+
+// Build the extension ZIP for Ghidra installation
+task buildExtension(type: Zip) {
+    dependsOn jar
+    
+    archiveFileName = "sentinel-js-${version}.zip"
+    destinationDirectory = file("${buildDir}/dist")
+    
+    // Extension structure
+    into('sentinel-js') {
+        // Extension metadata files
+        from('extension.properties')
+        from('Module.manifest')
+        
+        // Data directory with ExtensionPoint.manifest
+        from('data') {
+            into('data')
+        }
+        
+        // Extension JAR and dependencies
+        from(jar.archiveFile) {
+            into('lib')
+        }
+        // Include GraalJS dependencies
+        from(configurations.runtimeClasspath) {
+            into('lib')
+        }
+    }
+}
+
+jar {
+    // CRITICAL: JAR name must start with module name for ClassSearcher to find it
+    // Module directory is 'sentinel-js', so JAR must be 'sentinel-js*.jar'
+    // See ClassJar.isModuleDependencyJar(): jarName.startsWith(moduleName)
+    archiveBaseName = 'sentinel-js'
+    
+    // Handle duplicate META-INF/services entries
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    manifest {
+        attributes(
+            'Extension-Name': 'SENTINEL JavaScript',
+            'Extension-Version': version,
+            'Extension-Author': 'SENTINEL Project',
+            'Extension-Description': 'JavaScript scripting via GraalJS'
+        )
+    }
+}
+
+// Clean task
+clean {
+    delete "${buildDir}"
+}
+
+// Default build
+build {
+    dependsOn buildExtension
+}
