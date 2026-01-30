@@ -78,5 +78,3 @@ Include the following information:
 ## Acknowledgments
 
 Security researchers who have responsibly disclosed vulnerabilities will be acknowledged here.
-
-Thank you for helping keep SENTINEL and its users safe!

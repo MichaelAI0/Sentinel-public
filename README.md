@@ -6,7 +6,7 @@
 
 > **Community Edition** - Open source binary analysis framework with heuristic-based threat detection
 
-Sentinel is an AI-powered binary analysis framework that combines Ghidra reverse engineering with LLM intelligence to provide comprehensive malware analysis and threat detection.
+Sentinel is an AI-powered binary analysis framework that combines Ghidra reverse engineering with LLM intelligence for malware analysis and threat detection.
 
 ## Features
 
@@ -148,7 +148,7 @@ bun run lint
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+See our [Contributing Guide](CONTRIBUTING.md) for details on submitting pull requests.
 
 ## License
 
