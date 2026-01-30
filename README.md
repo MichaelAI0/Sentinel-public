@@ -1,4 +1,4 @@
-# 🛡️ Sentinel - AI-Powered Binary Analysis
+# Sentinel - AI-Powered Binary Analysis
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -8,22 +8,22 @@
 
 Sentinel is an AI-powered binary analysis framework that combines Ghidra reverse engineering with LLM intelligence to provide comprehensive malware analysis and threat detection.
 
-## 🎯 Features
+## Features
 
 ### Community Edition (This Repository)
 
-| Feature | Status |
-|---------|--------|
-| 🔍 **Static Binary Analysis** | ✅ Full |
-| 📊 **Ghidra Integration** | ✅ Full |
-| 🔢 **Hash Calculation** (MD5, SHA256, etc.) | ✅ Full |
-| 📝 **String Extraction & Analysis** | ✅ Full |
-| 📦 **Import/Export Analysis** | ✅ Full |
-| 🧮 **Entropy Calculation** | ✅ Full |
-| 🤖 **Local LLM Support** (Ollama, llama-server) | ✅ Full |
-| ⚠️ **Heuristic Threat Detection** | ✅ Full |
-| 📄 **Text Reports** | ✅ Full |
-| 🐳 **Docker Deployment** | ✅ Full |
+| Feature                                      | Status |
+| -------------------------------------------- | ------ |
+| **Static Binary Analysis**                   | Full   |
+| **Ghidra Integration**                       | Full   |
+| **Hash Calculation** (MD5, SHA256, etc.)     | Full   |
+| **String Extraction & Analysis**             | Full   |
+| **Import/Export Analysis**                   | Full   |
+| **Entropy Calculation**                      | Full   |
+| **Local LLM Support** (Ollama, llama-server) | Full   |
+| **Heuristic Threat Detection**               | Full   |
+| **Text Reports**                             | Full   |
+| **Docker Deployment**                        | Full   |
 
 ### Premium Features (Coming Soon)
 
@@ -31,15 +31,15 @@ Premium editions with enhanced AI capabilities are planned for future release:
 
 - AI-Powered Deep Analysis with advanced prompts
 - MITRE ATT&CK Mapping
-- Malware Family Classification  
+- Malware Family Classification
 - IOC Extraction & Enrichment
 - Cloud LLM Support (OpenAI, Anthropic)
 - PDF/HTML Reports
 - STIX/TAXII Export
 
-*Contact the maintainer for early access or enterprise inquiries.*
+_Contact the maintainer for early access or enterprise inquiries._
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -77,7 +77,7 @@ bun run sentinel analyze ./binary.exe --provider ollama --model mistral
 bun run sentinel analyze ./binary.exe --output json > report.json
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 sentinel/
@@ -92,7 +92,7 @@ sentinel/
 └── scripts/             # Build and deployment scripts
 ```
 
-## 🔧 Configuration
+## Configuration
 
 Create a `.sentinel/config.json` file in your home directory:
 
@@ -110,7 +110,7 @@ Create a `.sentinel/config.json` file in your home directory:
 }
 ```
 
-## 🐳 Docker Usage
+## Docker Usage
 
 ```bash
 # Start all services
@@ -122,7 +122,7 @@ curl -X POST http://localhost:3000/analyze \
   -d '{"path": "/samples/malware.exe"}'
 ```
 
-## 📖 Documentation
+## Documentation
 
 - [Installation Guide](docs/INSTALLATION.md)
 - [Usage Guide](docs/USAGE-GUIDE.md)
@@ -130,7 +130,7 @@ curl -X POST http://localhost:3000/analyze \
 - [CLI Reference](docs/CLI-REFERENCE.md)
 - [Contributing Guide](CONTRIBUTING.md)
 
-## 🛠️ Development
+## Development
 
 ```bash
 # Run in development mode
@@ -146,16 +146,10 @@ bun run typecheck
 bun run lint
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-## 📜 License
+## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
----
-
-<p align="center">
-  <strong>Built with ❤️ for the security community</strong>
-</p>

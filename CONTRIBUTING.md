@@ -1,6 +1,6 @@
 # Contributing to SENTINEL
 
-Thank you for your interest in contributing to SENTINEL! We welcome contributions from the community.
+Contributions are welcome. This guide explains the contribution process and project structure.
 
 ## Open Core Model
 

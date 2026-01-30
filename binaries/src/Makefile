@@ -47,18 +47,18 @@ ALL_SOURCES = $(SOURCES) $(BENIGN_SOURCES)
 .PHONY: all
 all: directories basic stripped
 	@echo ""
-	@echo "✅ Test binaries built successfully!"
+	@echo "Test binaries built successfully."
 	@echo "   Basic:    $(OUT_DIR)/"
 	@echo "   Stripped: $(STRIPPED_DIR)/"
 	@echo ""
-	@echo "💡 Run 'make packed' for UPX-packed versions (requires upx-ucl)"
+	@echo "Run 'make packed' for UPX-packed versions (requires upx-ucl)"
 	@echo ""
 
 # Full build including packed (for CI with UPX installed)
 .PHONY: full
 full: directories basic packed stripped
 	@echo ""
-	@echo "✅ All test binaries built (including packed)!"
+	@echo "All test binaries built (including packed)."
 	@echo ""
 
 .PHONY: directories
@@ -157,7 +157,7 @@ packed: basic directories
 		done; \
 	else \
 		echo ""; \
-		echo "⚠️  UPX not found. Install to create packed binaries:"; \
+		echo "UPX not found. Install to create packed binaries:"; \
 		echo "   Ubuntu/Debian: sudo apt-get install upx-ucl"; \
 		echo "   Arch Linux:    sudo pacman -S upx"; \
 		echo "   macOS:         brew install upx"; \
